@@ -277,7 +277,7 @@ def enviar_emails():
 
     placeholders = ",".join(["?"] * len(ids_int))
     query = f"""
-        SELECT
+        SELECT DISTINCT
             e.id,
             emp.razao_social,
             e.nome_fantasia,
@@ -286,10 +286,6 @@ def enviar_emails():
             e.email,
             e.telefone_1,
             e.uf
-        FROM estabelecimentos e
-        INNER JOIN empresas emp ON e.cnpj_basico = emp.cnpj_basico
-        LEFT JOIN cnaes c ON e.cnae_fiscal_principal = c.codigo
-        WHERE e.id IN ({placeholders})
     """
 
     conn = sqlite3.connect(db_path)
@@ -298,6 +294,15 @@ def enviar_emails():
         cursor = conn.cursor()
         cursor.execute(query, ids_int)
         empresas = cursor.fetchall()
+        for emp in empresas:
+            print(
+                "[DEBUG SELEÇÃO]",
+                "ID:", emp["id"],
+                "| Razão social:", emp["razao_social"],
+                "| CNAE:", emp["cnae_fiscal_principal"],
+                "| Descrição CNAE:", emp["desc_cnae"],
+                "| E-mail:", emp["email"]
+            )
     except Exception:
         app.logger.exception("Erro ao buscar empresas selecionadas")
         return "Erro ao buscar as empresas selecionadas no banco de dados.", 500
