@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados e Envio de E-mails</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Empresas Encontradas</h2>
+            <a href="/" class="btn btn-outline-secondary">Nova Pesquisa</a>
+        </div>
+
+        <form action="/enviar_emails" method="POST">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0 align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center" style="width: 50px;">
+                                        <input type="checkbox" id="select-all" class="form-check-input">
+                                    </th>
+                                    <th>CNPJ</th>
+                                    <th>Razão Social / Nome Fantasia</th>
+                                    <th>CNAE Principal</th>
+                                    <th>UF</th>
+                                    <th>Cidade</th>
+                                    <th>Situação</th>
+                                    <th>Capital Social</th>
+                                    <th>Contato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if empresas %}
+                                    {% for emp in empresas %}
+                                    <tr>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="selecionado" value="{{ emp['id'] }}" class="form-check-input row-checkbox">
+                                        </td>
+                                        <td><code>{{ emp['cnpj'] }}</code></td>
+                                        <td>
+                                            <strong>{{ emp['razao_social'] }}</strong>
+                                            {% if emp['nome_fantasia'] %}
+                                                <small class="d-block text-muted">Fantasia: {{ emp['nome_fantasia'] }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge bg-info text-dark">{{ emp['atividade'] }}</span></td>
+                                        <td><span class="badge bg-secondary">{{ emp['estado'] }}</span></td>
+                                        <td>{{ emp['cidade'] }}</td>
+                                        <td>
+                                            {% if emp['situacao'] == 'ATIVA' %}
+                                                <span class="badge bg-success">Ativa</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{{ emp['situacao'] }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ emp['capital_social'] }}</td>
+                                        <td>
+                                            <small class="d-block text-muted">Tel: {{ emp['telefone'] }}</small>
+                                            <small class="d-block text-primary">{{ emp['email'] }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="9" class="text-center py-4 text-muted">Nenhuma empresa encontrada com os filtros selecionados.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm p-4">
+                <h4 class="mb-3">Revisar e Personalizar E-mail</h4>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Assunto do E-mail:</strong></label>
+                    <input type="text" name="assunto" class="form-control" value="Parceria comercial e serviços especializados">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Mensagem Personalizada:</strong></label>
+                    <textarea name="mensagem" class="form-control" rows="5">Olá, tudo bem? Analisamos sua empresa e gostaríamos de apresentar nossos serviços...</textarea>
+                </div>
+                <button type="submit" class="btn btn-success btn-lg">Disparar E-mails para Selecionados</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Script para selecionar todos os seletores da tabela de uma vez -->
+    <script>
+        document.getElementById('select-all').addEventListener('change', function() {
+            let checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    </script>
+</body>
+</html>
