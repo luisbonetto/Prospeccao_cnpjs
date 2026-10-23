@@ -1,8 +1,14 @@
 import os
 import sqlite3
 from flask import Flask, render_template, request, jsonify
+from google import genai
+
 
 app = Flask(__name__)
+
+
+client = genai.Client()
+
 
 SITUACAO_MAP = {
     '01': 'NULA',
@@ -12,8 +18,10 @@ SITUACAO_MAP = {
     '08': 'BAIXADA'
 }
 
+
 def get_db_path():
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'leads.db')
+
 
 @app.route('/')
 def index():
@@ -166,7 +174,89 @@ def resultados():
 @app.route('/enviar_emails', methods=['POST'])
 def enviar_emails():
     empresas_selecionadas = request.form.getlist('selecionado')
-    return f"E-mails enviados com sucesso para {len(empresas_selecionadas)} empresas selecionadas!"
+
+    print(f"[DEBUG] IDs recebidos do formulário: {empresas_selecionadas}")
+
+    if not empresas_selecionadas:
+        return "Nenhuma empresa selecionada para o envio.", 400
+
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    try:
+        ids_int = [int(i) for i in empresas_selecionadas]
+    except ValueError:
+        conn.close()
+        return "IDs inválidos recebidos.", 400
+
+    placeholders = ','.join(['?'] * len(ids_int))
+
+    query = f'''
+        SELECT 
+            e.id,
+            emp.razao_social,
+            e.nome_fantasia,
+            e.cnae_fiscal_principal,
+            c.descricao AS desc_cnae,
+            e.email,
+            e.telefone_1,
+            e.uf
+        FROM estabelecimentos e
+        INNER JOIN empresas emp ON e.cnpj_basico = emp.cnpj_basico
+        LEFT JOIN cnaes c ON e.cnae_fiscal_principal = c.codigo
+        WHERE e.id IN ({placeholders})
+    '''
+
+    cursor.execute(query, ids_int)
+    empresas = cursor.fetchall()
+    conn.close()
+
+    print(f"[DEBUG] Empresas encontradas na base de dados: {len(empresas)}")
+
+    emails_enviados_com_sucesso = 0
+
+    for emp in empresas:
+        razao = emp['razao_social'] or emp['nome_fantasia'] or "Empresa"
+        cnae_desc = emp['desc_cnae'] or "Atividade Comercial/Industrial geral"
+        email = emp['email']
+
+        if not email or "@" not in email or email.strip() == "não informado":
+            print(f"[AVISO] Empresa {razao} ignorada por falta de e-mail válido: '{email}'")
+            continue
+
+        # Prompts adaptados para o Gemini
+        prompt_completo = (
+            "Instrução de Sistema:\n"
+            "Você é um representante comercial sênior da 'Sol Distribuidora', representante oficial "
+            "dos geradores de energia solar e estações de energia portátil da marca 'Bluetti' no Brasil. "
+            "Sua missão é redigir um e-mail comercial altamente profissional, B2B, cordial e direto ao ponto, "
+            "destacando como as soluções e equipamentos Bluetti (geradores solares portáteis, baterias de lítio de alta performance, "
+            "backup de energia para empresas) podem agregar valor ao ramo específico da empresa prospectada.\n\n"
+            "Dados da empresa prospectada:\n"
+            f"- Nome/Razão Social: {razao}\n"
+            f"- Ramo de Atuação (CNAE): {cnae_desc}\n\n"
+            "Gere o e-mail corporativo personalizado citando a Sol Distribuidora como representante oficial da Bluetti. "
+            "O e-mail deve ter um assunto atraente e o corpo da mensagem focado em eficiência energética, autonomia ou segurança contra quedas de energia."
+        )
+
+        try:
+            # Chamada ao modelo Gemini
+            resposta_ia = client.models.generate_content(
+                model='gemini-3.8-flash',
+                contents=prompt_completo
+            )
+
+            conteudo_email = resposta_ia.text
+
+            print(f"\n[SUCESSO GEMINI] E-mail gerado para {razao} ({email}):\n{conteudo_email}\n" + "-" * 50)
+            emails_enviados_com_sucesso += 1
+
+        except Exception as e:
+            print(f"[ERRO GEMINI] Falha ao processar a empresa {razao}: {e}")
+
+    return f"Processo concluído! O agente do Gemini gerou mensagens customizadas para {emails_enviados_com_sucesso} empresas com e-mail válido."
 
 
 if __name__ == '__main__':
