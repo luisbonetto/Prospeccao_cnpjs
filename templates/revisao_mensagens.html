@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Revisão de Mensagens - Prospecção</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <h2 class="mb-3">Revisão de Mensagens Personalizadas (IA)</h2>
+        <p class="text-muted">Avalie e edite as mensagens geradas pelo Gemini antes de realizar o envio final aos clientes selecionados.</p>
+
+        <form action="/enviar-mensagens" method="POST">
+            {% for item in mensagens_geradas %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <span><strong>Empresa:</strong> {{ item.razao_social }}</span>
+                    <span><strong>Email:</strong> {{ item.email }} | <strong>Tel:</strong> {{ item.telefone }}</span>
+                </div>
+                <div class="card-body">
+                    <input type="hidden" name="empresa_id" value="{{ item.id }}">
+                    <input type="hidden" name="email_{{ item.id }}" value="{{ item.email }}">
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">Mensagem gerada para edição:</label>
+                        <textarea name="mensagem_{{ item.id }}" class="form-control" rows="5" required>{{ item.mensagem }}</textarea>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="d-flex justify-content-between">
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">Voltar aos Resultados</a>
+                <button type="submit" class="btn btn-primary btn-lg">Aprovar e Enviar Todas as Mensagens</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

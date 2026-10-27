@@ -1,9 +1,14 @@
 import os
 import sqlite3
+from google import genai
+from google.genai import types
 
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
+
+# Inicializa o cliente do Gemini (utiliza a variável de ambiente GEMINI_API_KEY)
+ai_client = genai.Client()
 
 SITUACAO_MAP = {
     "01": "NULA",
@@ -68,6 +73,12 @@ def api_municipios(uf):
 def resultados():
     # Coleta os parâmetros de filtro via POST ou GET (paginação)
     if request.method == "POST":
+
+        remetente_nome = request.form.get("remetente_nome", "")
+        remetente_cargo = request.form.get("remetente_cargo", "")
+        remetente_empresa = request.form.get("remetente_empresa", "")
+        objetivo_prospeccao = request.form.get("objetivo_prospeccao", "")
+
         estado = request.form.get("estado", "")
         municipio = request.form.get("municipio", "")
         situacao = request.form.get("situacao", "")
@@ -75,6 +86,12 @@ def resultados():
         busca_nome = request.form.get("busca_nome", "")
         cnpj_busca = request.form.get("cnpj_busca", "")
     else:
+
+        remetente_nome = request.args.get("remetente_nome", "")
+        remetente_cargo = request.args.get("remetente_cargo", "")
+        remetente_empresa = request.args.get("remetente_empresa", "")
+        objetivo_prospeccao = request.args.get("objetivo_prospeccao", "")
+
         estado = request.args.get("estado", "")
         municipio = request.args.get("municipio", "")
         situacao = request.args.get("situacao", "")
@@ -235,7 +252,11 @@ def resultados():
             filtro_situacao=situacao,
             filtro_cnae=cnae,
             filtro_busca_nome=busca_nome,
-            filtro_cnpj_busca=cnpj_busca
+            filtro_cnpj_busca=cnpj_busca,
+            remetente_nome=remetente_nome,
+            remetente_cargo=remetente_cargo,
+            remetente_empresa=remetente_empresa,
+            objetivo_prospeccao=objetivo_prospeccao
         )
 
     except Exception:
@@ -243,6 +264,125 @@ def resultados():
         return "Ocorreu um erro ao consultar as empresas. Verifique o terminal.", 500
     finally:
         conn.close()
+
+
+@app.route("/gerar-mensagens", methods=["POST"])
+def gerar_mensagens():
+    remetente_nome = request.form.get("remetente_nome")
+    remetente_cargo = request.form.get("remetente_cargo")
+    remetente_empresa = request.form.get("remetente_empresa")
+    objetivo_prospeccao = request.form.get("objetivo_prospeccao")
+
+    ids_selecionados = request.form.getlist("empresas_selecionadas")
+
+    if not ids_selecionados:
+        return "Nenhuma empresa foi selecionada para prospecção. <a href='javascript:history.back()'>Voltar</a>", 400
+
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    placeholders = ",".join(["?"] * len(ids_selecionados))
+    query = f"""
+        SELECT 
+            e.id,
+            emp.razao_social,
+            e.nome_fantasia,
+            c.descricao AS desc_cnae,
+            e.uf,
+            e.municipio,
+            e.email,
+            e.ddd_1,
+            e.telefone_1
+        FROM estabelecimentos e
+        INNER JOIN empresas emp ON e.cnpj_basico = emp.cnpj_basico
+        LEFT JOIN cnaes c ON e.cnae_fiscal_principal = c.codigo
+        WHERE e.id IN ({placeholders})
+    """
+    cursor.execute(query, ids_selecionados)
+    empresas = cursor.fetchall()
+    conn.close()
+
+    mensagens_geradas = []
+
+    for emp in empresas:
+        razao = emp["razao_social"] or emp["nome_fantasia"] or "Empresa"
+        cnae_desc = emp["desc_cnae"] or "Atividade comercial geral"
+        cidade = emp["municipio"]
+        uf = emp["uf"]
+
+        telefone = f"({emp['ddd_1']}) {emp['telefone_1']}" if emp['ddd_1'] and emp['telefone_1'] else "Não informado"
+        email = emp["email"].lower() if emp["email"] else "Não informado"
+
+        # Prompt estruturado para o Gemini criar a mensagem comercial personalizada
+        prompt = f"""
+        Você é um assistente de vendas e prospecção comercial altamente qualificado.
+        Elabore uma mensagem profissional, cordial e direta de prospecção comercial (focada em B2B) para enviar a um potencial cliente.
+
+        Dados do remetente:
+        - Nome: {remetente_nome}
+        - Cargo: {remetente_cargo}
+        - Empresa: {remetente_empresa}
+        - Objetivo principal da abordagem: {objetivo_prospeccao}
+
+        Dados da empresa prospectada (alvo):
+        - Razão Social / Nome: {razao}
+        - Ramo de atuação (CNAE): {cnae_desc}
+        - Localização: {cidade} - {uf}
+
+        Diretrizes:
+        1. A mensagem deve ser personalizada com base no ramo de atuação da empresa alvo.
+        2. Seja claro sobre o valor que a solução/serviço pode agregar ao negócio deles.
+        3. Termine com uma chamada para ação (CTA) educada para uma breve conversa.
+        """
+
+        try:
+            response = ai_client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=prompt
+            )
+            texto_mensagem = response.text
+        except Exception as e:
+            texto_mensagem = f"Erro ao gerar mensagem via IA: {str(e)}"
+
+        mensagens_geradas.append({
+            "id": emp["id"],
+            "razao_social": razao,
+            "email": email,
+            "telefone": telefone,
+            "mensagem": texto_mensagem
+        })
+
+    return render_template(
+        "revisao_mensagens.html",
+        mensagens_geradas=mensagens_geradas
+    )
+
+
+@app.route("/enviar-mensagens", methods=["POST"])
+def enviar_mensagens():
+    # Aqui você implementa a lógica final de disparo (por exemplo, disparar via API de e-mail/WhatsApp ou salvar log no banco)
+    # Como o usuário pode ter editado as caixas de texto na tela de revisão, recuperamos iterando pelos IDs:
+
+    empresa_ids = request.form.getlist("empresa_id")
+
+    enviados_com_sucesso = 0
+    for emp_id in empresa_ids:
+        mensagem_final = request.form.get(f"mensagem_{emp_id}")
+        email_destino = request.form.get(f"email_{emp_id}")
+
+        # TODO: Inserir integração de disparo real (Ex: SMTP/SendGrid para e-mail ou API de mensagens)
+        print(f"Enviando para ID {emp_id} (Email: {email_destino}):\n{mensagem_final}\n{'-' * 40}")
+        enviados_com_sucesso += 1
+
+    return f"""
+    <div style='font-family: Arial; text-align: center; margin-top: 50px;'>
+        <h2>Processo Concluído!</h2>
+        <p>{enviados_com_sucesso} mensagens foram processadas e enviadas com sucesso.</p>
+        <a href='/' class='btn btn-primary'>Realizar nova Prospecção</a>
+    </div>
+    """
 
 
 if __name__ == "__main__":

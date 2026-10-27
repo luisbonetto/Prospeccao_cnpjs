@@ -16,90 +16,98 @@
             <a href="/" class="btn btn-outline-secondary">Nova Pesquisa</a>
         </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0 align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th class="text-center" style="width: 50px;">
-                                    <input type="checkbox" id="select-all" class="form-check-input">
-                                </th>
-                                <th>CNPJ</th>
-                                <th>Razão Social / Nome Fantasia</th>
-                                <th>CNAE Principal</th>
-                                <th>UF</th>
-                                <th>Cidade</th>
-                                <th>Situação</th>
-                                <th>Capital Social</th>
-                                <th>Contato</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if empresas %}
-                                {% for emp in empresas %}
+        <!-- Formulário que envia os IDs selecionados para a IA -->
+        <form action="/gerar-mensagens" method="POST">
+            <!-- Repassa os dados do remetente de forma oculta para a próxima tela -->
+            <input type="hidden" name="remetente_nome" value="{{ remetente_nome }}">
+            <input type="hidden" name="remetente_cargo" value="{{ remetente_cargo }}">
+            <input type="hidden" name="remetente_empresa" value="{{ remetente_empresa }}">
+            <input type="hidden" name="objetivo_prospeccao" value="{{ objetivo_prospeccao }}">
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0 align-middle">
+                            <thead class="table-dark">
                                 <tr>
-                                    <td class="text-center">
-                                        <input type="checkbox" name="selecionado" value="{{ emp['id'] }}" class="form-check-input row-checkbox">
-                                    </td>
-                                    <td><code>{{ emp['cnpj'] }}</code></td>
-                                    <td>
-                                        <strong>{{ emp['razao_social'] }}</strong>
-                                        {% if emp['nome_fantasia'] %}
-                                            <small class="d-block text-muted">Fantasia: {{ emp['nome_fantasia'] }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <!-- Código do CNAE em destaque -->
-                                        <span class="badge bg-info text-dark mb-1">{{ emp['atividade_codigo'] }}</span>
-                                        <!-- Descrição textual do CNAE (se disponível) -->
-                                        {% if emp['atividade_descricao'] %}
-                                            <small class="d-block text-muted" style="max-width: 250px; line-height: 1.2;">
-                                                {{ emp['atividade_descricao'] }}
-                                            </small>
-                                        {% endif %}
-                                    </td>
-                                    <td><span class="badge bg-secondary">{{ emp['estado'] }}</span></td>
-                                    <td>{{ emp['cidade'] }}</td>
-                                    <td>
-                                        {% if emp['situacao'] == 'ATIVA' %}
-                                            <span class="badge bg-success">Ativa</span>
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">{{ emp['situacao'] }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ emp['capital_social'] }}</td>
-                                    <td>
-                                        <small class="d-block text-muted">Tel: {{ emp['telefone'] }}</small>
-                                        <small class="d-block text-primary">{{ emp['email'] }}</small>
-                                    </td>
+                                    <th class="text-center" style="width: 50px;">
+                                        <input type="checkbox" id="select-all" class="form-check-input">
+                                    </th>
+                                    <th>CNPJ</th>
+                                    <th>Razão Social / Nome Fantasia</th>
+                                    <th>CNAE Principal</th>
+                                    <th>UF</th>
+                                    <th>Cidade</th>
+                                    <th>Situação</th>
+                                    <th>Contato</th>
                                 </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="9" class="text-center py-4 text-muted">Nenhuma empresa encontrada com os filtros selecionados.</td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {% if empresas %}
+                                    {% for emp in empresas %}
+                                    <tr>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="empresas_selecionadas" value="{{ emp['id'] }}" class="form-check-input row-checkbox">
+                                        </td>
+                                        <td><code>{{ emp['cnpj'] }}</code></td>
+                                        <td>
+                                            <strong>{{ emp['razao_social'] }}</strong>
+                                            {% if emp['nome_fantasia'] %}
+                                                <small class="d-block text-muted">Fantasia: {{ emp['nome_fantasia'] }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark mb-1">{{ emp['atividade_codigo'] }}</span>
+                                            {% if emp['atividade_descricao'] %}
+                                                <small class="d-block text-muted" style="max-width: 250px; line-height: 1.2;">
+                                                    {{ emp['atividade_descricao'] }}
+                                                </small>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge bg-secondary">{{ emp['estado'] }}</span></td>
+                                        <td>{{ emp['cidade'] }}</td>
+                                        <td>
+                                            {% if emp['situacao'] == 'ATIVA' %}
+                                                <span class="badge bg-success">Ativa</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{{ emp['situacao'] }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="d-block text-muted">Tel: {{ emp['telefone'] }}</small>
+                                            <small class="d-block text-primary">{{ emp['email'] }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4 text-muted">Nenhuma empresa encontrada com os filtros selecionados.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <!-- Botão de Ação para gerar mensagens com IA -->
+            <div class="d-grid gap-2 mb-4">
+                <button type="submit" class="btn btn-success btn-lg">Gerar Mensagens Personalizadas com IA (Gemini) para Selecionadas</button>
+            </div>
+        </form>
 
         <!-- Navegação da Paginação -->
         {% if total_paginas > 1 %}
         <nav aria-label="Navegação de páginas">
             <ul class="pagination justify-content-center">
                 <li class="page-item {% if pagina_atual <= 1 %}disabled{% endif %}">
-                    <a class="page-link" href="/resultados?pagina={{ pagina_atual - 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}">Anterior</a>
+                    <a class="page-link" href="/resultados?pagina={{ pagina_atual - 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}&remetente_nome={{ remetente_nome }}&remetente_cargo={{ remetente_cargo }}&remetente_empresa={{ remetente_empresa }}&objetivo_prospeccao={{ objetivo_prospeccao }}">Anterior</a>
                 </li>
-
                 <li class="page-item disabled">
                     <span class="page-link">Página {{ pagina_atual }} de {{ total_paginas }}</span>
                 </li>
-
                 <li class="page-item {% if pagina_atual >= total_paginas %}disabled{% endif %}">
-                    <a class="page-link" href="/resultados?pagina={{ pagina_atual + 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}">Próxima</a>
+                    <a class="page-link" href="/resultados?pagina={{ pagina_atual + 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}&remetente_nome={{ remetente_nome }}&remetente_cargo={{ remetente_cargo }}&remetente_empresa={{ remetente_empresa }}&objetivo_prospeccao={{ objetivo_prospeccao }}">Próxima</a>
                 </li>
             </ul>
         </nav>
