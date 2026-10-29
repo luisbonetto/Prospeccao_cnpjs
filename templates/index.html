@@ -110,12 +110,9 @@
                 <label class="form-label"><strong>Ramo de Atuação / CNAE:</strong></label>
                 <select name="cnae" class="form-select" id="cnae-select">
                     <option value="">Selecione ou digite para buscar o CNAE...</option>
-                    <!-- Mantido igual ao original para economizar espaço -->
-                    <optgroup label="Seção C - Indústrias de Transformação">
-                        <option value="25">25 - Fabricação de Produtos de Metal</option>
-                        <option value="27">27 - Fabricação de Máquinas, Aparelhos e Materiais Elétricos</option>
-                        <option value="33">33 - Manutenção, Reparação e Instalação de Máquinas e Equipamentos</option>
-                    </optgroup>
+                    {% for cnae in cnaes %}
+                        <option value="{{ cnae.codigo }}">{{ cnae.codigo }} - {{ cnae.descricao }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
