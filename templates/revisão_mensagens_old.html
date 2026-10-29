@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revisão de Mensagens - Prospecção</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <h2 class="mb-3">Revisão de Mensagens Personalizadas (IA)</h2>
+        <p class="text-muted">Avalie e edite as mensagens geradas pelo Gemini. Envie individualmente conforme necessário.</p>
+
+        <!-- Grid em Colunas Responsivo -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+            {% for item in mensagens_geradas %}
+            <div class="col d-flex align-items-stretch">
+                <!-- Cada card agora é um formulário independente -->
+                <form action="/enviar-mensagem-individual" method="POST" class="card shadow-sm w-100 h-100 d-flex flex-column">
+                    <div class="card-header bg-dark text-white">
+                        <div class="fw-bold fs-6 text-truncate" title="{{ item.razao_social }}">
+                            {{ item.razao_social }}
+                        </div>
+                        <div class="small text-light opacity-75 mt-1 text-truncate">
+                            <strong>Email:</strong> {{ item.email }}<br>
+                            <strong>Tel:</strong> {{ item.telefone }}
+                        </div>
+                    </div>
+
+                    <div class="card-body d-flex flex-column">
+                        <input type="hidden" name="empresa_id" value="{{ item.id }}">
+                        <input type="hidden" name="email" value="{{ item.email }}">
+                        <input type="hidden" name="telefone" value="{{ item.telefone }}">
+                        <input type="hidden" name="razao_social" value="{{ item.razao_social }}">
+
+                        <div class="mb-3 flex-grow-1 d-flex flex-column">
+                            <label class="form-label text-secondary small fw-bold">Mensagem gerada para edição:</label>
+                            <textarea name="mensagem" class="form-control flex-grow-1" rows="7" required>{{ item.mensagem }}</textarea>
+                        </div>
+
+                        <!-- Botão de Envio Individual para cada card -->
+                        <div class="mt-auto pt-2">
+                            <button type="submit" class="btn btn-success w-100 fw-bold">
+                                Enviar para esta Empresa
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Botão de Voltar Geral -->
+        <div class="d-flex justify-content-start pt-3 border-top">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">Voltar aos Resultados</a>
+        </div>
+    </div>
+</body>
+</html>

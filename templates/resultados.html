@@ -16,8 +16,8 @@
             <a href="/" class="btn btn-outline-secondary">Nova Pesquisa</a>
         </div>
 
-        <!-- Formulário que envia os IDs selecionados para a IA -->
-        <form action="/gerar-mensagens" method="POST">
+        <!-- ADICIONADO ID AQUI: id="form-prospeccao" -->
+        <form action="/gerar-mensagens" method="POST" id="form-prospeccao">
             <!-- Repassa os dados do remetente de forma oculta para a próxima tela -->
             <input type="hidden" name="remetente_nome" value="{{ remetente_nome }}">
             <input type="hidden" name="remetente_cargo" value="{{ remetente_cargo }}">
@@ -92,7 +92,8 @@
 
             <!-- Botão de Ação para gerar mensagens com IA -->
             <div class="d-grid gap-2 mb-4">
-                <button type="submit" class="btn btn-success btn-lg">Gerar Mensagens Personalizadas com IA (Gemini) para Selecionadas</button>
+                <!-- ADICIONADO ID AQUI: id="btn-enviar" -->
+                <button type="submit" id="btn-enviar" class="btn btn-success btn-lg">Gerar Mensagens Personalizadas com IA (Gemini) para Selecionadas</button>
             </div>
         </form>
 
@@ -115,11 +116,30 @@
     </div>
 
     <script>
+        // Script original do "Selecionar Todos"
         const selectAll = document.getElementById('select-all');
         if (selectAll) {
             selectAll.addEventListener('change', function() {
                 let checkboxes = document.querySelectorAll('.row-checkbox');
                 checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        }
+
+        // ADICIONADO: Trava anti-envio duplo para o formulário
+        let enviado = false;
+        const formProspeccao = document.getElementById('form-prospeccao');
+        if (formProspeccao) {
+            formProspeccao.addEventListener('submit', function(e) {
+                if (enviado) {
+                    e.preventDefault();
+                    return false;
+                }
+                enviado = true;
+                const btn = document.getElementById('btn-enviar');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerText = 'Gerando mensagens com IA, aguarde...';
+                }
             });
         }
     </script>

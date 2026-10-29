@@ -268,6 +268,7 @@ def resultados():
 
 @app.route("/gerar-mensagens", methods=["POST"])
 def gerar_mensagens():
+
     remetente_nome = request.form.get("remetente_nome")
     remetente_cargo = request.form.get("remetente_cargo")
     remetente_empresa = request.form.get("remetente_empresa")
@@ -285,7 +286,7 @@ def gerar_mensagens():
 
     placeholders = ",".join(["?"] * len(ids_selecionados))
     query = f"""
-        SELECT 
+        SELECT DISTINCT
             e.id,
             emp.razao_social,
             e.nome_fantasia,
@@ -306,7 +307,9 @@ def gerar_mensagens():
 
     mensagens_geradas = []
 
+
     for emp in empresas:
+
         razao = emp["razao_social"] or emp["nome_fantasia"] or "Empresa"
         cnae_desc = emp["desc_cnae"] or "Atividade comercial geral"
         cidade = emp["municipio"]
@@ -315,31 +318,33 @@ def gerar_mensagens():
         telefone = f"({emp['ddd_1']}) {emp['telefone_1']}" if emp['ddd_1'] and emp['telefone_1'] else "Não informado"
         email = emp["email"].lower() if emp["email"] else "Não informado"
 
-        # Prompt estruturado para o Gemini criar a mensagem comercial personalizada
+        # Prompt estruturado ajustado para retornar apenas a mensagem final
         prompt = f"""
-        Você é um assistente de vendas e prospecção comercial altamente qualificado.
-        Elabore uma mensagem profissional, cordial e direta de prospecção comercial (focada em B2B) para enviar a um potencial cliente.
+                Você é um assistente de vendas e prospecção comercial altamente qualificado.
+                Elabore uma mensagem profissional, cordial e direta de prospecção comercial (focada em B2B) para enviar a um potencial cliente.
 
-        Dados do remetente:
-        - Nome: {remetente_nome}
-        - Cargo: {remetente_cargo}
-        - Empresa: {remetente_empresa}
-        - Objetivo principal da abordagem: {objetivo_prospeccao}
+                Dados do remetente:
+                - Nome: {remetente_nome}
+                - Cargo: {remetente_cargo}
+                - Empresa: {remetente_empresa}
+                - Objetivo principal da abordagem: {objetivo_prospeccao}
 
-        Dados da empresa prospectada (alvo):
-        - Razão Social / Nome: {razao}
-        - Ramo de atuação (CNAE): {cnae_desc}
-        - Localização: {cidade} - {uf}
+                Dados da empresa prospectada (alvo):
+                - Razão Social / Nome: {razao}
+                - Ramo de atuação (CNAE): {cnae_desc}
+                - Localização: {cidade} - {uf}
 
-        Diretrizes:
-        1. A mensagem deve ser personalizada com base no ramo de atuação da empresa alvo.
-        2. Seja claro sobre o valor que a solução/serviço pode agregar ao negócio deles.
-        3. Termine com uma chamada para ação (CTA) educada para uma breve conversa.
-        """
+                Diretrizes:
+                1. A mensagem deve ser personalizada com base no ramo de atuação da empresa alvo.
+                2. Seja claro sobre o valor que a solução/serviço pode agregar ao negócio deles.
+                3. Termine com uma chamada para ação (CTA) educada para uma breve conversa.
+                4. IMPORTANTE: Retorne APENAS o texto da mensagem pronta para envio, sem introduções, sem explicações, sem comentários extras e sem justificativas sobre a abordagem.
+                """
 
         try:
+            # Usando o modelo oficial estável
             response = ai_client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-3.1-flash-lite",  # gemini-3.1-flash-lite gemini-3.6-flash gemini-1.5-flash  gemini-3.8-flash # gemini-2.5-flash
                 contents=prompt
             )
             texto_mensagem = response.text
@@ -360,30 +365,41 @@ def gerar_mensagens():
     )
 
 
-@app.route("/enviar-mensagens", methods=["POST"])
-def enviar_mensagens():
-    # Aqui você implementa a lógica final de disparo (por exemplo, disparar via API de e-mail/WhatsApp ou salvar log no banco)
-    # Como o usuário pode ter editado as caixas de texto na tela de revisão, recuperamos iterando pelos IDs:
+@app.route("/enviar-email", methods=["POST"])
+def enviar_email():
+    empresa_id = request.form.get("empresa_id")
+    email_destino = request.form.get("contato")
+    mensagem = request.form.get("mensagem")
 
-    empresa_ids = request.form.getlist("empresa_id")
-
-    enviados_com_sucesso = 0
-    for emp_id in empresa_ids:
-        mensagem_final = request.form.get(f"mensagem_{emp_id}")
-        email_destino = request.form.get(f"email_{emp_id}")
-
-        # TODO: Inserir integração de disparo real (Ex: SMTP/SendGrid para e-mail ou API de mensagens)
-        print(f"Enviando para ID {emp_id} (Email: {email_destino}):\n{mensagem_final}\n{'-' * 40}")
-        enviados_com_sucesso += 1
+    # TODO: Implementar integração real de disparo de e-mail (Ex: SMTP, SendGrid, etc.)
+    print(f"[DISPARO E-MAIL] Empresa ID: {empresa_id} | Destino: {email_destino}\nMensagem:\n{mensagem}\n{'-' * 40}")
 
     return f"""
     <div style='font-family: Arial; text-align: center; margin-top: 50px;'>
-        <h2>Processo Concluído!</h2>
-        <p>{enviados_com_sucesso} mensagens foram processadas e enviadas com sucesso.</p>
-        <a href='/' class='btn btn-primary'>Realizar nova Prospecção</a>
+        <h2>E-mail Enviado com Sucesso!</h2>
+        <p>A mensagem foi disparada para o e-mail: <strong>{email_destino}</strong></p>
+        <a href='javascript:history.back()' class='btn btn-primary'>Voltar para Revisão</a>
+    </div>
+    """
+
+
+@app.route("/enviar-whatsapp", methods=["POST"])
+def enviar_whatsapp():
+    empresa_id = request.form.get("empresa_id")
+    telefone_destino = request.form.get("contato")
+    mensagem = request.form.get("mensagem")
+
+    # TODO: Implementar integração real de disparo via WhatsApp (Ex: API oficial, Evolution API, etc.)
+    print(f"[DISPARO WHATSAPP] Empresa ID: {empresa_id} | Destino: {telefone_destino}\nMensagem:\n{mensagem}\n{'-' * 40}")
+
+    return f"""
+    <div style='font-family: Arial; text-align: center; margin-top: 50px;'>
+        <h2>Mensagem de WhatsApp Processada!</h2>
+        <p>O disparo para o WhatsApp <strong>{telefone_destino}</strong> foi acionado.</p>
+        <a href='javascript:history.back()' class='btn btn-success'>Voltar para Revisão</a>
     </div>
     """
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
