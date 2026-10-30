@@ -25,7 +25,25 @@ def get_db_path():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    conn = None
+    cnaes = []
+    try:
+        db_path = get_db_path()
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            # Busca todos os CNAEs ordenados por código ou descrição
+            cursor.execute("SELECT codigo, descricao FROM cnaes ORDER BY codigo ASC")
+            cnaes = cursor.fetchall()
+    except Exception as e:
+        app.logger.exception("Erro ao carregar CNAEs para o index")
+    finally:
+        if conn:
+            conn.close()
+
+    return render_template("index.html", cnaes=cnaes)
 
 
 @app.route("/api/municipios/<uf>")

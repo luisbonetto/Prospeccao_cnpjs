@@ -109,9 +109,13 @@
             <div class="mb-3">
                 <label class="form-label"><strong>Ramo de Atuação / CNAE:</strong></label>
                 <select name="cnae" class="form-select" id="cnae-select">
-                    <option value="">Selecione ou digite para buscar o CNAE...</option>
-                    {% for cnae in cnaes %}
-                        <option value="{{ cnae.codigo }}">{{ cnae.codigo }} - {{ cnae.descricao }}</option>
+                    <option value="">Selecione ou digite para buscar o CNAE (ex: elétrica)...</option>
+                    {% for categoria, lista_cnaes in cnaes_por_categoria.items() %}
+                        <optgroup label="{{ categoria }}">
+                            {% for cnae in lista_cnaes %}
+                                <option value="{{ cnae.codigo }}">{{ cnae.codigo }} - {{ cnae.descricao }}</option>
+                            {% endfor %}
+                        </optgroup>
                     {% endfor %}
                 </select>
             </div>
@@ -126,7 +130,18 @@
         let choicesMunicipio = null;
         document.addEventListener('DOMContentLoaded', function () {
             const elementCnae = document.getElementById('cnae-select');
-            if (elementCnae) { new Choices(elementCnae, { searchEnabled: true }); }
+            if (elementCnae) {
+                new Choices(elementCnae, {
+                searchEnabled: true,
+                searchResultLimit: 100,
+                itemSelectText: 'Pressione para selecionar',
+                // Configuração para tornar a busca precisa (evita resultados aleatórios)
+                fuseOptions: {
+                    threshold: 0.5, // 0.0 exige correspondência exata, 0.1 é bem restrito
+                    distance: 1000
+                    }
+                });
+            }
             const elementMunicipio = document.getElementById('municipio');
             if (elementMunicipio) {
                 choicesMunicipio = new Choices(elementMunicipio, { searchEnabled: true, shouldSort: false });

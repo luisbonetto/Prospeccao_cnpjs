@@ -26,7 +26,7 @@ def get_db_path():
 @app.route("/")
 def index():
     conn = None
-    cnaes = []
+    cnaes_por_categoria = {}
     try:
         db_path = get_db_path()
         if os.path.exists(db_path):
@@ -34,16 +34,47 @@ def index():
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
-            # Busca todos os CNAEs ordenados por código ou descrição
+            # Busca todos os CNAEs ordenados por código
             cursor.execute("SELECT codigo, descricao FROM cnaes ORDER BY codigo ASC")
-            cnaes = cursor.fetchall()
+            rows = cursor.fetchall()
+
+            # Agrupa dinamicamente por Divisão (2 primeiros dígitos ou prefixo)
+            for row in rows:
+                codigo = str(row["codigo"]).strip()
+                descricao = row["descricao"] or "Sem descrição"
+
+                # Pega os 2 primeiros dígitos como categoria/divisão principal
+                prefixo = codigo[:2] if len(codigo) >= 2 else "Geral"
+                categoria_nome = f"Divisão {prefixo}"
+
+                # Se quiser nomear categorias mais amigáveis para alguns prefixos comuns:
+                if prefixo == "27":
+                    categoria_nome = "Divisão 27 - Fabricação de Máquinas e Equipamentos Elétricos"
+                elif prefixo == "43":
+                    categoria_nome = "Divisão 43 - Serviços Especializados para Construção (Elétrica, Obras)"
+                elif prefixo == "46":
+                    categoria_nome = "Divisão 46 - Comércio Atacadista"
+                elif prefixo == "47":
+                    categoria_nome = "Divisão 47 - Comércio Varejista"
+                elif prefixo == "28":
+                    categoria_nome = "Divisão 28 - Fabricação de Máquinas e Equipamentos"
+                elif prefixo == "25":
+                    categoria_nome = "Divisão 25 - Fabricação de Produtos de Metal"
+
+                if categoria_nome not in cnaes_por_categoria:
+                    cnaes_por_categoria[categoria_nome] = []
+
+                cnaes_por_categoria[categoria_nome].append({
+                    "codigo": codigo,
+                    "descricao": descricao
+                })
     except Exception as e:
         app.logger.exception("Erro ao carregar CNAEs para o index")
     finally:
         if conn:
             conn.close()
 
-    return render_template("index.html", cnaes=cnaes)
+    return render_template("index.html", cnaes_por_categoria=cnaes_por_categoria)
 
 
 @app.route("/api/municipios/<uf>")
