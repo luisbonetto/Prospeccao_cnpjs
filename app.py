@@ -134,6 +134,8 @@ def resultados():
         cnae = request.form.get("cnae", "")
         busca_nome = request.form.get("busca_nome", "")
         cnpj_busca = request.form.get("cnpj_busca", "")
+
+        filtro_contato = request.form.get("filtro_contato", "todas")
     else:
 
         remetente_nome = request.args.get("remetente_nome", "")
@@ -147,6 +149,8 @@ def resultados():
         cnae = request.args.get("cnae", "")
         busca_nome = request.args.get("busca_nome", "")
         cnpj_busca = request.args.get("cnpj_busca", "")
+
+        filtro_contato = request.args.get("filtro_contato", "todas")
 
     # Controle da paginação
     try:
@@ -197,6 +201,15 @@ def resultados():
             if cnpj_limpo:
                 where_clauses.append("e.cnpj_basico LIKE ?")
                 params.append(f"%{cnpj_limpo[:8]}%")
+
+        if filtro_contato == "com_contato":
+            where_clauses.append("""
+                        (
+                            (e.ddd_1 IS NOT NULL AND e.ddd_1 != '' AND e.telefone_1 IS NOT NULL AND e.telefone_1 != '') 
+                            OR 
+                            (e.email IS NOT NULL AND e.email != '' AND e.email != 'não informado')
+                        )
+                    """)
 
         where_sql = " AND ".join(where_clauses)
 

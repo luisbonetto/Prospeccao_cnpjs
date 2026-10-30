@@ -102,13 +102,13 @@
         <nav aria-label="Navegação de páginas">
             <ul class="pagination justify-content-center">
                 <li class="page-item {% if pagina_atual <= 1 %}disabled{% endif %}">
-                    <a class="page-link" href="/resultados?pagina={{ pagina_atual - 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}&remetente_nome={{ remetente_nome }}&remetente_cargo={{ remetente_cargo }}&remetente_empresa={{ remetente_empresa }}&objetivo_prospeccao={{ objetivo_prospeccao }}">Anterior</a>
+                    <a class="page-link" href="/resultados?pagina={{ pagina_atual - 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}&remetente_nome={{ remetente_nome }}&remetente_cargo={{ remetente_cargo }}&remetente_empresa={{ remetente_empresa }}&objetivo_prospeccao={{ objetivo_prospeccao }}&filtro_contato={{ filtro_contato }}">Anterior</a>
                 </li>
                 <li class="page-item disabled">
                     <span class="page-link">Página {{ pagina_atual }} de {{ total_paginas }}</span>
                 </li>
                 <li class="page-item {% if pagina_atual >= total_paginas %}disabled{% endif %}">
-                    <a class="page-link" href="/resultados?pagina={{ pagina_atual + 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}&remetente_nome={{ remetente_nome }}&remetente_cargo={{ remetente_cargo }}&remetente_empresa={{ remetente_empresa }}&objetivo_prospeccao={{ objetivo_prospeccao }}">Próxima</a>
+                    <a class="page-link" href="/resultados?pagina={{ pagina_atual + 1 }}&estado={{ filtro_estado }}&municipio={{ filtro_municipio }}&situacao={{ filtro_situacao }}&cnae={{ filtro_cnae }}&busca_nome={{ filtro_busca_nome }}&cnpj_busca={{ filtro_cnpj_busca }}&remetente_nome={{ remetente_nome }}&remetente_cargo={{ remetente_cargo }}&remetente_empresa={{ remetente_empresa }}&objetivo_prospeccao={{ objetivo_prospeccao }}&filtro_contato={{ filtro_contato }}">Próxima</a>
                 </li>
             </ul>
         </nav>
