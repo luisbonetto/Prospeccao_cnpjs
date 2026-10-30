@@ -5,6 +5,11 @@ from google.genai import types
 
 from flask import Flask, render_template, request, jsonify
 
+# --- CONFIGURAÇÕES DE HOMOLOGAÇÃO / SEGURANÇA ---
+MODO_TESTE = True  # Mude para False somente quando for para produção com clientes reais
+EMAIL_TESTE = "luisinhobonetto@gmail.com"  # Coloque o seu e-mail aqui
+WHATSAPP_TESTE = "(41) 98474-4757"                 # Coloque o seu WhatsApp de testes aqui
+
 app = Flask(__name__)
 
 # Inicializa o cliente do Gemini (utiliza a variável de ambiente GEMINI_API_KEY)
@@ -430,36 +435,64 @@ def gerar_mensagens():
 @app.route("/enviar-email", methods=["POST"])
 def enviar_email():
     empresa_id = request.form.get("empresa_id")
-    email_destino = request.form.get("contato")
+    email_destino_original = request.form.get("contato")
     mensagem = request.form.get("mensagem")
 
-    # TODO: Implementar integração real de disparo de e-mail (Ex: SMTP, SendGrid, etc.)
-    print(f"[DISPARO E-MAIL] Empresa ID: {empresa_id} | Destino: {email_destino}\nMensagem:\n{mensagem}\n{'-' * 40}")
+    # Verifica se estamos em modo de homologação
+    if MODO_TESTE:
+        email_destino = EMAIL_TESTE
+        aviso_teste = f"<div class='alert alert-warning'><strong>[MODO DE TESTE ATIVO]</strong> O e-mail original era para: <i>{email_destino_original}</i>, mas foi redirecionado com segurança para o seu e-mail de teste.</div>"
+    else:
+        email_destino = email_destino_original
+        aviso_teste = ""
+
+    # TODO: Aqui entrará a integração real com o SendGrid/Resend futuramente
+    print(f"[DISPARO E-MAIL] (Modo Teste: {MODO_TESTE}) | Destino Real: {email_destino}\nMensagem:\n{mensagem}\n{'-' * 40}")
 
     return f"""
-    <div style='font-family: Arial; text-align: center; margin-top: 50px;'>
-        <h2>E-mail Enviado com Sucesso!</h2>
-        <p>A mensagem foi disparada para o e-mail: <strong>{email_destino}</strong></p>
-        <a href='javascript:history.back()' class='btn btn-primary'>Voltar para Revisão</a>
-    </div>
+    <!DOCTYPE html>
+    <html lang='pt-br'>
+    <head><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'></head>
+    <body class='bg-light'><div class='container mt-5 text-center'>
+        <div class='card shadow p-4 mx-auto' style='max-width: 500px;'>
+            <h2>E-mail Processado!</h2>
+            {aviso_teste}
+            <p>A mensagem foi disparada para: <strong>{email_destino}</strong></p>
+            <a href='javascript:history.back()' class='btn btn-primary mt-3'>Voltar para Revisão</a>
+        </div>
+    </div></body></html>
     """
 
 
 @app.route("/enviar-whatsapp", methods=["POST"])
 def enviar_whatsapp():
     empresa_id = request.form.get("empresa_id")
-    telefone_destino = request.form.get("contato")
+    telefone_destino_original = request.form.get("contato")
     mensagem = request.form.get("mensagem")
 
-    # TODO: Implementar integração real de disparo via WhatsApp (Ex: API oficial, Evolution API, etc.)
-    print(f"[DISPARO WHATSAPP] Empresa ID: {empresa_id} | Destino: {telefone_destino}\nMensagem:\n{mensagem}\n{'-' * 40}")
+    # Verifica se estamos em modo de homologação
+    if MODO_TESTE:
+        telefone_destino = WHATSAPP_TESTE
+        aviso_teste = f"<div class='alert alert-warning'><strong>[MODO DE TESTE ATIVO]</strong> O WhatsApp original era para: <i>{telefone_destino_original}</i>, mas foi redirecionado com segurança para o seu número de teste.</div>"
+    else:
+        telefone_destino = telefone_destino_original
+        aviso_teste = ""
+
+    # TODO: Aqui entrará a integração real com a API de WhatsApp futuramente
+    print(f"[DISPARO WHATSAPP] (Modo Teste: {MODO_TESTE}) | Destino Real: {telefone_destino}\nMensagem:\n{mensagem}\n{'-' * 40}")
 
     return f"""
-    <div style='font-family: Arial; text-align: center; margin-top: 50px;'>
-        <h2>Mensagem de WhatsApp Processada!</h2>
-        <p>O disparo para o WhatsApp <strong>{telefone_destino}</strong> foi acionado.</p>
-        <a href='javascript:history.back()' class='btn btn-success'>Voltar para Revisão</a>
-    </div>
+    <!DOCTYPE html>
+    <html lang='pt-br'>
+    <head><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'></head>
+    <body class='bg-light'><div class='container mt-5 text-center'>
+        <div class='card shadow p-4 mx-auto' style='max-width: 500px;'>
+            <h2>WhatsApp Processado!</h2>
+            {aviso_teste}
+            <p>O disparo para o WhatsApp <strong>{telefone_destino}</strong> foi acionado.</p>
+            <a href='javascript:history.back()' class='btn btn-success mt-3'>Voltar para Revisão</a>
+        </div>
+    </div></body></html>
     """
 
 
